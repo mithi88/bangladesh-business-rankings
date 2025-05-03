@@ -5,6 +5,7 @@ import { SearchBar } from "../components/SearchBar";
 import { CompanyCard } from "../components/CompanyCard";
 import { CompanyForm } from "../components/CompanyForm";
 import { DeleteConfirmation } from "../components/DeleteConfirmation";
+import { PaginationComponent } from "../components/Pagination";
 import { Company } from "../types";
 import { getCompanies, createCompany, updateCompany, deleteCompany, setupFallbackMockData } from "../services/api";
 import { useAuth } from "../contexts/AuthContext";
@@ -21,6 +22,10 @@ export default function HomePage() {
   const [editingCompany, setEditingCompany] = useState<Company | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [companyToDelete, setCompanyToDelete] = useState<Company | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCompanies, setTotalCompanies] = useState(0);
+  const companiesPerPage = 8;
   
   const { isLoggedIn } = useAuth();
   
@@ -32,15 +37,26 @@ export default function HomePage() {
       });
   }, []);
   
-  // Fetch companies on mount
+  // Fetch companies on mount and when page changes
   useEffect(() => {
     const fetchCompanies = async () => {
       try {
+        setLoading(true);
         // Use the correct API function depending on whether we're using mock data
         const fetchFn = window.useMockApi ? (window as any).getCompanies : getCompanies;
-        const data = await fetchFn();
-        setCompanies(data);
-        setFilteredCompanies(data);
+        const data = await fetchFn(currentPage, companiesPerPage);
+        
+        if (window.useMockApi) {
+          setCompanies(data.companies);
+          setFilteredCompanies(data.companies);
+          setTotalCompanies(data.totalCount);
+          setTotalPages(Math.ceil(data.totalCount / companiesPerPage));
+        } else {
+          setCompanies(data.companies);
+          setFilteredCompanies(data.companies);
+          setTotalCompanies(data.totalCount);
+          setTotalPages(Math.ceil(data.totalCount / companiesPerPage));
+        }
       } catch (error: any) {
         toast({
           title: "Error",
@@ -53,7 +69,7 @@ export default function HomePage() {
     };
     
     fetchCompanies();
-  }, []);
+  }, [currentPage]);
   
   // Filter companies when search term changes
   useEffect(() => {
@@ -94,7 +110,23 @@ export default function HomePage() {
         // Use the correct API function depending on whether we're using mock data
         const deleteFn = window.useMockApi ? (window as any).deleteCompany : deleteCompany;
         await deleteFn(companyToDelete.id);
-        setCompanies(companies.filter(c => c.id !== companyToDelete.id));
+        
+        // Refresh the company list after deletion
+        const fetchFn = window.useMockApi ? (window as any).getCompanies : getCompanies;
+        const data = await fetchFn(currentPage, companiesPerPage);
+        
+        if (window.useMockApi) {
+          setCompanies(data.companies);
+          setFilteredCompanies(data.companies);
+          setTotalCompanies(data.totalCount);
+          setTotalPages(Math.ceil(data.totalCount / companiesPerPage));
+        } else {
+          setCompanies(data.companies);
+          setFilteredCompanies(data.companies);
+          setTotalCompanies(data.totalCount);
+          setTotalPages(Math.ceil(data.totalCount / companiesPerPage));
+        }
+        
         toast({
           title: "Success",
           description: `${companyToDelete.name} has been deleted.`,
@@ -119,9 +151,13 @@ export default function HomePage() {
         // Use the correct API function depending on whether we're using mock data
         const updateFn = window.useMockApi ? (window as any).updateCompany : updateCompany;
         const updated = await updateFn(editingCompany.id, company);
-        setCompanies(
-          companies.map(c => (c.id === editingCompany.id ? updated : c))
-        );
+        
+        // Refresh data to ensure we have the latest information
+        const fetchFn = window.useMockApi ? (window as any).getCompanies : getCompanies;
+        const data = await fetchFn(currentPage, companiesPerPage);
+        setCompanies(data.companies);
+        setFilteredCompanies(data.companies);
+        
         toast({
           title: "Success",
           description: `${company.name} has been updated.`,
@@ -131,7 +167,15 @@ export default function HomePage() {
         // Use the correct API function depending on whether we're using mock data
         const createFn = window.useMockApi ? (window as any).createCompany : createCompany;
         const created = await createFn(company);
-        setCompanies([...companies, created]);
+        
+        // Refresh data to ensure we have the latest information
+        const fetchFn = window.useMockApi ? (window as any).getCompanies : getCompanies;
+        const data = await fetchFn(currentPage, companiesPerPage);
+        setCompanies(data.companies);
+        setFilteredCompanies(data.companies);
+        setTotalCompanies(prev => prev + 1);
+        setTotalPages(Math.ceil((totalCompanies + 1) / companiesPerPage));
+        
         toast({
           title: "Success",
           description: `${company.name} has been added.`,
@@ -145,6 +189,12 @@ export default function HomePage() {
         variant: "destructive",
       });
     }
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    // Reset search when changing pages
+    setSearchTerm("");
   };
 
   return (
@@ -186,16 +236,26 @@ export default function HomePage() {
               )}
             </div>
           ) : (
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {filteredCompanies.map((company) => (
-                <CompanyCard
-                  key={company.id}
-                  company={company}
-                  onEdit={() => handleEdit(company)}
-                  onDelete={handleDelete}
+            <>
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {filteredCompanies.map((company) => (
+                  <CompanyCard
+                    key={company.id}
+                    company={company}
+                    onEdit={() => handleEdit(company)}
+                    onDelete={handleDelete}
+                  />
+                ))}
+              </div>
+              
+              {!searchTerm && totalPages > 1 && (
+                <PaginationComponent 
+                  currentPage={currentPage} 
+                  totalPages={totalPages} 
+                  onPageChange={handlePageChange} 
                 />
-              ))}
-            </div>
+              )}
+            </>
           )}
         </div>
       </main>

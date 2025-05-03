@@ -1,3 +1,4 @@
+
 import { AuthResponse, Company, ApiError, User } from "../types";
 
 // Base URL for API - will point to our Express backend
@@ -66,10 +67,10 @@ export const logout = (): void => {
   localStorage.removeItem(USER_KEY);
 };
 
-// Get all companies
-export const getCompanies = async (): Promise<Company[]> => {
+// Get companies with pagination
+export const getCompanies = async (page = 1, limit = 8): Promise<{companies: Company[], totalCount: number}> => {
   try {
-    const response = await fetch(`${API_URL}/companies`);
+    const response = await fetch(`${API_URL}/companies?page=${page}&limit=${limit}`);
     return handleResponse(response);
   } catch (error) {
     console.error("Error fetching companies:", error);
@@ -264,6 +265,136 @@ const mockCompanies: Company[] = [
     employees: 85000,
     website: "https://www.pranfoods.net",
     ceo: "Ahsan Khan Chowdhury"
+  },
+  {
+    id: "9",
+    name: "Summit Group",
+    sector: "Energy",
+    logo: "https://www.summitpowerinternational.com/assets/images/logo.png",
+    headquarters: "Dhaka, Bangladesh",
+    founded: 1985,
+    description: "Summit Group is the largest infrastructure conglomerate in Bangladesh focused on power generation.",
+    revenue: "$1.8 billion",
+    employees: 3500,
+    website: "https://www.summitpowerinternational.com",
+    ceo: "Muhammad Aziz Khan"
+  },
+  {
+    id: "10",
+    name: "Walton Group",
+    sector: "Electronics",
+    logo: "https://waltonbd.com/image/catalog/logo.png",
+    headquarters: "Dhaka, Bangladesh",
+    founded: 1977,
+    description: "Walton is the largest electronics brand and manufacturer in Bangladesh.",
+    revenue: "$1 billion",
+    employees: 15000,
+    website: "https://waltonbd.com",
+    ceo: "S M Nurul Alam"
+  },
+  {
+    id: "11",
+    name: "DBL Group",
+    sector: "Textile & Apparel",
+    logo: "https://dbl-group.com/wp-content/uploads/2018/08/DBL-Logo.png",
+    headquarters: "Gazipur, Bangladesh",
+    founded: 1991,
+    description: "DBL Group is a diversified business entity with a strong focus on readymade garments.",
+    revenue: "$450 million",
+    employees: 35000,
+    website: "https://dbl-group.com",
+    ceo: "Abdul Wahed"
+  },
+  {
+    id: "12",
+    name: "Akij Group",
+    sector: "Conglomerate",
+    logo: "https://www.akij.net/img/logo/akij-logo.png",
+    headquarters: "Dhaka, Bangladesh",
+    founded: 1952,
+    description: "Akij Group is one of the largest industrial conglomerates in Bangladesh with diverse business interests.",
+    revenue: "$900 million",
+    employees: 32000,
+    website: "https://www.akij.net",
+    ceo: "Sheikh Akijuddin"
+  },
+  {
+    id: "13",
+    name: "Bengal Group",
+    sector: "Conglomerate",
+    logo: "https://www.bengalgroup.com/images/logo.png",
+    headquarters: "Dhaka, Bangladesh",
+    founded: 1969,
+    description: "Bengal Group is involved in plastic, media, real estate, and food industries among others.",
+    revenue: "$400 million",
+    employees: 7500,
+    website: "https://www.bengalgroup.com",
+    ceo: "Morshed Alam"
+  },
+  {
+    id: "14",
+    name: "Partex Group",
+    sector: "Conglomerate",
+    logo: "https://www.partexgroup.com/wp-content/uploads/2019/01/partex-logo-1.jpg",
+    headquarters: "Dhaka, Bangladesh",
+    founded: 1962,
+    description: "Partex Group has businesses in consumer products, furniture, food and beverage, and real estate.",
+    revenue: "$350 million",
+    employees: 6000,
+    website: "https://www.partexgroup.com",
+    ceo: "Aziz Al Mahmood"
+  },
+  {
+    id: "15",
+    name: "Transcom Group",
+    sector: "Conglomerate",
+    logo: "https://www.transcombd.com/site/assets/images/logo.png",
+    headquarters: "Dhaka, Bangladesh",
+    founded: 1885,
+    description: "Transcom Group operates in electronics, foods, beverages, pharmaceuticals, and media.",
+    revenue: "$700 million",
+    employees: 10000,
+    website: "https://www.transcombd.com",
+    ceo: "Latifur Rahman"
+  },
+  {
+    id: "16",
+    name: "Dutch-Bangla Bank",
+    sector: "Banking",
+    logo: "https://www.dutchbanglabank.com/img/dbbl-logo.png",
+    headquarters: "Dhaka, Bangladesh",
+    founded: 1995,
+    description: "Dutch-Bangla Bank is known for its extensive network of ATMs and digital banking services.",
+    revenue: "$380 million",
+    employees: 6500,
+    website: "https://www.dutchbanglabank.com",
+    ceo: "Abul Kashem Md. Shirin"
+  },
+  {
+    id: "17",
+    name: "City Bank",
+    sector: "Banking",
+    logo: "https://www.thecitybank.com/images/logo.svg",
+    headquarters: "Dhaka, Bangladesh",
+    founded: 1983,
+    description: "City Bank is one of the oldest private commercial banks operating in Bangladesh.",
+    revenue: "$320 million",
+    employees: 4000,
+    website: "https://www.thecitybank.com",
+    ceo: "Mashrur Arefin"
+  },
+  {
+    id: "18",
+    name: "Olympic Industries",
+    sector: "Food & Beverage",
+    logo: "https://olympicbd.com/wp-content/uploads/2019/08/Logo-1.png",
+    headquarters: "Dhaka, Bangladesh",
+    founded: 1979,
+    description: "Olympic Industries is one of the largest biscuit and confectionery manufacturers in Bangladesh.",
+    revenue: "$200 million",
+    employees: 3000,
+    website: "https://olympicbd.com",
+    ceo: "Mubarak Ali"
   }
 ];
 
@@ -289,9 +420,14 @@ export const setupFallbackMockData = async () => {
     const originalLogin = login;
     
     // Mock implementations
-    (window as any).getCompanies = async () => {
-      console.log("Using mock getCompanies");
-      return mockCompanies;
+    (window as any).getCompanies = async (page = 1, limit = 8) => {
+      console.log("Using mock getCompanies", page, limit);
+      const startIndex = (page - 1) * limit;
+      const paginatedCompanies = mockCompanies.slice(startIndex, startIndex + limit);
+      return {
+        companies: paginatedCompanies,
+        totalCount: mockCompanies.length
+      };
     };
     
     (window as any).getCompanyById = async (id: string) => {
