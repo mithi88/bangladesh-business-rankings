@@ -6,7 +6,8 @@ import {
   PaginationItem, 
   PaginationLink, 
   PaginationNext, 
-  PaginationPrevious 
+  PaginationPrevious,
+  PaginationEllipsis 
 } from "./ui/pagination";
 
 interface PaginationComponentProps {
@@ -36,7 +37,7 @@ export function PaginationComponent({
       if (currentPage > 4) {
         pages.push(
           <PaginationItem key="ellipsis-start">
-            <PaginationLink disabled>...</PaginationLink>
+            <PaginationEllipsis />
           </PaginationItem>
         );
       }
@@ -58,7 +59,7 @@ export function PaginationComponent({
       if (currentPage < totalPages - 3) {
         pages.push(
           <PaginationItem key="ellipsis-end">
-            <PaginationLink disabled>...</PaginationLink>
+            <PaginationEllipsis />
           </PaginationItem>
         );
       }
