@@ -29,7 +29,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
-      const response = await apiLogin(username, password);
+      // Use the correct API function depending on whether we're using mock data
+      const loginFn = window.useMockApi ? (window as any).login : apiLogin;
+      const response = await loginFn(username, password);
       setIsLoggedIn(true);
       setUsername(response.user.username);
       toast({

@@ -6,7 +6,7 @@ import { CompanyCard } from "../components/CompanyCard";
 import { CompanyForm } from "../components/CompanyForm";
 import { DeleteConfirmation } from "../components/DeleteConfirmation";
 import { Company } from "../types";
-import { getCompanies, createCompany, updateCompany, deleteCompany } from "../services/api";
+import { getCompanies, createCompany, updateCompany, deleteCompany, setupFallbackMockData } from "../services/api";
 import { useAuth } from "../contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -24,11 +24,21 @@ export default function HomePage() {
   
   const { isLoggedIn } = useAuth();
   
+  // Initialize API with fallback mechanism
+  useEffect(() => {
+    setupFallbackMockData()
+      .catch(error => {
+        console.error("Failed to set up API fallback:", error);
+      });
+  }, []);
+  
   // Fetch companies on mount
   useEffect(() => {
     const fetchCompanies = async () => {
       try {
-        const data = await getCompanies();
+        // Use the correct API function depending on whether we're using mock data
+        const fetchFn = window.useMockApi ? (window as any).getCompanies : getCompanies;
+        const data = await fetchFn();
         setCompanies(data);
         setFilteredCompanies(data);
       } catch (error: any) {
@@ -81,7 +91,9 @@ export default function HomePage() {
   const confirmDelete = async () => {
     if (companyToDelete?.id) {
       try {
-        await deleteCompany(companyToDelete.id);
+        // Use the correct API function depending on whether we're using mock data
+        const deleteFn = window.useMockApi ? (window as any).deleteCompany : deleteCompany;
+        await deleteFn(companyToDelete.id);
         setCompanies(companies.filter(c => c.id !== companyToDelete.id));
         toast({
           title: "Success",
@@ -104,7 +116,9 @@ export default function HomePage() {
     try {
       if (editingCompany && editingCompany.id) {
         // Update existing company
-        const updated = await updateCompany(editingCompany.id, company);
+        // Use the correct API function depending on whether we're using mock data
+        const updateFn = window.useMockApi ? (window as any).updateCompany : updateCompany;
+        const updated = await updateFn(editingCompany.id, company);
         setCompanies(
           companies.map(c => (c.id === editingCompany.id ? updated : c))
         );
@@ -114,7 +128,9 @@ export default function HomePage() {
         });
       } else {
         // Add new company
-        const created = await createCompany(company);
+        // Use the correct API function depending on whether we're using mock data
+        const createFn = window.useMockApi ? (window as any).createCompany : createCompany;
+        const created = await createFn(company);
         setCompanies([...companies, created]);
         toast({
           title: "Success",
